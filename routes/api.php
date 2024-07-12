@@ -30,6 +30,8 @@ Route::get('/usuarios/{dni}', [UsuarioController::class, 'show']);
 Route::post('/usuarios', [UsuarioController::class, 'store']);
 Route::put('/usuarios/{dni}', [UsuarioController::class, 'update']);
 Route::delete('/usuarios/{dni}', [UsuarioController::class, 'destroy']);
+Route::put('/cambiarclave/{dni}', [UsuarioController::class, 'cambiarclave']);
+Route::put('/cambiarpatente/{dni}', [UsuarioController::class, 'updatePatente']);
  
  // Vehículos
  Route::get('/vehiculos/{patente}', [VehiculoController::class, 'show']);
