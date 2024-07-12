@@ -23,7 +23,9 @@ class Vehiculo extends Model
         'patente',
         'dni_usuario',
      ];
-
+     protected $hidden = [
+        'creado',
+        'actualizado',];
     public function usuario()
     {
         return $this->belongsTo(Usuario::class, 'dni_usuario', 'dni');

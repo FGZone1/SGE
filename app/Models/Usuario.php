@@ -31,7 +31,10 @@ class Usuario extends Model
         'contraseña',
         'saldo',
         ];
-
+        protected $hidden = [
+        'contraseña',
+        'creado',
+        'actualizado',];
     public function vehiculos()
     {
         return $this->hasMany(Vehiculo::class, 'dni_usuario', 'dni');
