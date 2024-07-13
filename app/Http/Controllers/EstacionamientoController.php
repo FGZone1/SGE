@@ -174,12 +174,9 @@ public function getEstado($patente, Request $request)
         'estado' => $estacionamiento->estado,
         'tiempo' => $estacionamiento->tiempo,
         'saldo' => $usuario->saldo,
-        
-        '_links' => [
-                   
+        '_links' => [                  
                 'href' => url('/api/usuarios/' . $usuario->dni)
-            
-        ]
+                 ]
     ]);
 }
 

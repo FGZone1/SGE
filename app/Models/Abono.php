@@ -12,7 +12,7 @@ class Abono extends Model
     protected $primaryKey = 'cuit_comercio'; // Define cuit como clave primaria
     public $incrementing = false; // No es autoincremental
     protected $keyType = 'int'; // Tipo de clave primaria
-    protected $table = 'abonos_comercios'; // Make sure this matches your table name
+    protected $table = 'abonos_comercios'; 
     protected $fillable = [
         'cuit_comercio',
         'fecha_desde',
