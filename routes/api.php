@@ -40,19 +40,23 @@ Route::put('/cambiarpatente/{dni}', [UsuarioController::class, 'updatePatente'])
  Route::delete('/vehiculos/{patente}', [VehiculoController::class, 'destroy']);
  
  // Comercios
+ Route::get('/comercios', [ComercioController::class, 'index']);
  Route::get('/comercios/{cuit}', [ComercioController::class, 'show']);
  Route::post('/comercios', [ComercioController::class, 'store']);
  Route::put('/comercios/{cuit}', [ComercioController::class, 'update']);
  Route::delete('/comercios/{cuit}', [ComercioController::class, 'destroy']);
  
  // Estacionamientos
- Route::get('/estacionamientos/{id}', [EstacionamientoController::class, 'show']);
+ Route::get('/estadoauto/{patente}', [EstacionamientoController::class, 'getEstado']);
  Route::post('/estacionamientos', [EstacionamientoController::class, 'store']);
- Route::put('/estacionamientos/{id}', [EstacionamientoController::class, 'update']);
+ Route::put('/estacionamientos/{patente}', [EstacionamientoController::class, 'updateEstado']);
+
+
  
  // Recargas
- Route::get('/recargas', [RecargaController::class, 'index']);
  Route::post('/recargas', [RecargaController::class, 'store']);
+ Route::get('/recargas', [RecargaController::class, 'index']);
+ Route::get('/recargas/{patente}', [RecargaController::class, 'getSaldoPorPatente']);
  
  // Abonos
  Route::get('/abonos', [AbonoController::class, 'index']);

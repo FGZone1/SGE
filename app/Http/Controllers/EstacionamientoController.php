@@ -3,74 +3,185 @@
 namespace App\Http\Controllers;
 use App\Models\Estacionamiento;
 use Illuminate\Http\Request;
+use App\Models\Usuario;
+use App\Models\Vehiculo;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 
 class EstacionamientoController extends Controller
 {
-    public function show($id)
-    {
-        return Estacionamiento::findOrFail($id);
-    }
-
+    
     public function store(Request $request)
 {
-    $validatedData = $request->validate([
-        'dni' => 'required|integer|exists:usuarios,dni',
-        'patente' => 'required|string|exists:vehiculos,patente',
+    // Validación de entrada
+    $validator = Validator::make( 
+        $request->all(), [
+        'dni' => 'required|integer',
+        'patente' => 'required|string|max:20',
         'contraseña' => 'required|string',
-        'estado' => 'required|in:estacionado,libre',
-        'tiempo' => 'required|integer|min:0',
+        'tiempo' => 'required|integer|multiple_of:15',
+    ]);
+    if ( $validator->fails() == true ) {
+        return response()->json(['message' => 'Faltan datos obligatorios o los mismos no son correctos'], 404);
+    }
+
+   // Verificar si la patente ya existe en la tabla de estacionamientos
+   $estacionamientoExistente = Estacionamiento::where('patente_vehiculo', $request->patente)->first();
+
+   if ($estacionamientoExistente) {
+       return response()->json(['message' => 'La patente ya existe en el registro de estacionamiento'], 409); 
+   }   
+  // Verificar si el vehículo existe con el DNI asociado
+  $vehiculo = Vehiculo::where('patente', $request->patente)
+  ->where('dni_usuario', $request->dni)
+  ->first();
+
+if (!$vehiculo) {
+  return response()->json(['message' => 'La patente no esta entre sus autos'], 404);
+}
+
+// Verificar si el usuario existe
+$usuario = Usuario::where('dni', $request->dni)->first();
+if (!$usuario) {
+  return response()->json(['message' => 'Usuario inexistente'], 404);
+}
+
+// Validar contraseña
+if (!Hash::check($request->contraseña, $usuario->contraseña)) {
+  return response()->json(['message' => 'Contraseña no válida'], 401);
+}
+
+
+   // Verificar saldo
+    $costoPorMinuto = 40; 
+    $costoTotal = $request->tiempo * $costoPorMinuto;
+
+    if ($usuario->saldo < $costoTotal) {
+        return response()->json(['message' => 'Saldo insuficiente'], 400);
+    }
+
+    
+    // Registrar el estacionamiento
+    Estacionamiento::create([
+        'patente_vehiculo' => $request->patente,
+        'dni_usuario' => $request->dni,
+        'estado' => "estacionado",
+        'tiempo' => $request->tiempo,
     ]);
 
-    // Verifica que el tiempo sea un múltiplo de 15
-    if ($validatedData['tiempo'] % 15 !== 0) {
-        return response()->json(['error' => 'El tiempo debe ser un múltiplo de 15 minutos.'], 400);
-    }
-
-    // Encuentra al usuario
-    $usuario = Usuario::where('dni', $validatedData['dni'])->first();
-
-    // Verifica la contraseña
-    if (!Hash::check($validatedData['contraseña'], $usuario->contraseña)) {
-        return response()->json(['error' => 'Contraseña incorrecta'], 401);
-    }
-
-    // Calcula el costo del estacionamiento
-    $costoPorMinuto =100; // Ejemplo: 100 pesos por minuto
-    $costoTotal = $validatedData['tiempo'] * $costoPorMinuto;
-
-    // Verifica el saldo
-    if ($usuario->saldo < $costoTotal) {
-        $minutosAlcanzados = floor($usuario->saldo / $costoPorMinuto);
-        return response()->json(['error' => 'Saldo insuficiente. Puedes estacionar por ' . $minutosAlcanzados . ' minutos.'], 400);
-    }
-
-    // Verifica si hay un estacionamiento activo para este vehículo
-    $estacionamientoActivo = Estacionamiento::where('patente_vehiculo', $validatedData['patente'])
-        ->where('estado', 'estacionado')
-        ->first();
-
-    if ($estacionamientoActivo) {
-        return response()->json(['error' => 'El vehículo ya está estacionado.'], 400);
-    }
-
-    // Crea el registro de estacionamiento
-    $estacionamiento = new Estacionamiento();
-    $estacionamiento->patente_vehiculo = $validatedData['patente'];
-    $estacionamiento->dni_usuario = $usuario->dni;
-    $estacionamiento->estado = $validatedData['estado'];
-    $estacionamiento->tiempo = $validatedData['tiempo'];
-    $estacionamiento->save();
-
-    // Actualiza el saldo del usuario
+    // Actualizar saldo
     $usuario->saldo -= $costoTotal;
     $usuario->save();
-
-    return response()->json(['message' => 'Estacionamiento registrado exitosamente.'], 201);
+    
+    return response()->json(['message' => 'Estacionamiento registrado correctamente'], 201);
 }
-    public function update(Request $request, $id)
-    {
-        $estacionamiento = Estacionamiento::findOrFail($id);
-        $estacionamiento->update($request->all());
-        return response()->json($estacionamiento, 200);
+    
+public function updateEstado(Request $request, $patente)
+{
+    // Validación de entrada
+    $validator = Validator::make(
+        $request->all(), [
+            'dni' => 'required|integer',
+            'contraseña' => 'required|string',
+            'estado' => 'required|in:estacionado,libre',
+        ]
+    );
+
+    if ($validator->fails()) {
+        return response()->json(['message' => 'Faltan datos obligatorios o los mismos no son correctos'], 400);
     }
+
+    // Verificar si el vehículo existe con el DNI asociado
+    $vehiculo = Vehiculo::where('patente', $patente)
+        ->where('dni_usuario', $request->dni)
+        ->first();
+
+    if (!$vehiculo) {
+        return response()->json(['message' => 'La patente no está entre sus autos'], 404);
+    }
+
+    // Verificar si el usuario existe
+    $usuario = Usuario::where('dni', $request->dni)->first();
+    if (!$usuario) {
+        return response()->json(['message' => 'Usuario inexistente'], 404);
+    }
+
+    // Validar contraseña
+    if (!Hash::check($request->contraseña, $usuario->contraseña)) {
+        return response()->json(['message' => 'Contraseña no válida'], 401);
+    }
+
+    // Verificar si el vehículo tiene un registro de estacionamiento
+    $estacionamiento = Estacionamiento::where('patente_vehiculo', $patente)
+        ->first();
+
+    if (!$estacionamiento) {
+        return response()->json(['message' => 'El vehículo no tiene un registro de estacionamiento'], 404);
+    }
+
+    // Verificar si el estado actual es diferente del estado solicitado
+    if ($estacionamiento->estado == $request->estado) {
+        return response()->json(['message' => 'El vehículo ya está en el estado solicitado'], 400);
+    }
+
+    // Actualizar el estado del estacionamiento
+    Estacionamiento::where('patente_vehiculo', $patente)
+        ->update(['estado' => $request->estado, 'actualizado' => now()]);
+
+    return response()->json(['message' => 'Estado de estacionamiento actualizado correctamente'], 200);
+}
+
+public function getEstado($patente, Request $request)
+{
+    $validator = Validator::make($request->all(), [
+        'dni' => 'required|integer',
+        'contraseña' => 'required|string',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json(['message' => 'Faltan datos obligatorios o los mismos no son correctos'], 404);
+    }
+
+    $vehiculo = Vehiculo::where('patente', $patente)
+        ->where('dni_usuario', $request->dni)
+        ->first();
+
+    if (!$vehiculo) {
+        return response()->json(['message' => 'La patente no está entre sus autos'], 404);
+    }
+
+    $usuario = Usuario::where('dni', $request->dni)->first();
+
+    if (!$usuario) {
+        return response()->json(['message' => 'Usuario inexistente'], 404);
+    }
+
+    if (!Hash::check($request->contraseña, $usuario->contraseña)) {
+        return response()->json(['message' => 'Contraseña no válida'], 401);
+    }
+
+    $estacionamiento = Estacionamiento::where('patente_vehiculo', $patente)
+        ->where('dni_usuario', $request->dni)
+        ->first();
+
+    if (!$estacionamiento) {
+        return response()->json(['message' => 'No hay registro de estacionamiento para este vehículo'], 404);
+    }
+
+    return response()->json([
+        'dni' => $usuario->dni,
+        'patente' => $estacionamiento->patente_vehiculo,
+        'estado' => $estacionamiento->estado,
+        'tiempo' => $estacionamiento->tiempo,
+        'saldo' => $usuario->saldo,
+        
+        '_links' => [
+                   
+                'href' => url('/api/usuarios/' . $usuario->dni)
+            
+        ]
+    ]);
+}
+
+    
 }
