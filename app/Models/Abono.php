@@ -8,4 +8,19 @@ use Illuminate\Database\Eloquent\Model;
 class Abono extends Model
 {
     use HasFactory;
+   
+    protected $primaryKey = 'cuit_comercio'; // Define cuit como clave primaria
+    public $incrementing = false; // No es autoincremental
+    protected $keyType = 'int'; // Tipo de clave primaria
+    protected $table = 'abonos_comercios'; // Make sure this matches your table name
+    protected $fillable = [
+        'cuit_comercio',
+        'fecha_desde',
+        'fecha_hasta',
+        'importe',
+    ];
+    protected $dates = ['creado', 'actualizado'];
+    protected $hidden = [
+        'creado',
+        'actualizado',];
 }
