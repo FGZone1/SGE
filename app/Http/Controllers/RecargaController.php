@@ -103,6 +103,18 @@ class RecargaController extends Controller
      $recargas = $query->pluck('importe');
        // $recargas = $query->get();
     
-        return response()->json($recargas);
-    }
+        //return response()->json($recargas);
+
+        return response()->json([
+            'recargas' => $recargas,
+            '_links' => [
+                'usuario' => [
+                    'href' => url('/api/usuarios/' . $request->dni)
+                ],
+                'comercio' => [
+                    'href' => url('/api/comercios/' . $request->cuit_comercio)
+                ]
+            ]
+        ]);
+}
 }
