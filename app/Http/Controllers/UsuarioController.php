@@ -7,6 +7,7 @@ use App\Models\Usuario;
 use App\Models\Vehiculo;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Validator;
 
 class UsuarioController extends Controller
 {
@@ -138,6 +139,20 @@ class UsuarioController extends Controller
 
     public function store(Request $request)
     {
+        $validator = Validator::make($request->all(), [
+            'dni' => 'required|integer|unique:usuarios',
+            'nombre' => 'required|string|max:255',
+            'apellido' => 'required|string|max:255',
+            'domicilio' => 'string|max:255|nullable',
+            'email' => 'required|email|unique:usuarios',
+            'fecha_nacimiento' => 'required|date',
+            'patente' => 'required|string|max:20|unique:vehiculos',
+            'contraseña' => 'required|string|min:8',
+        ]);
+    
+        if ($validator->fails()) {
+            return response()->json(['message' => 'Faltan datos obligatorios o los mismos no son correctos'], 404);
+        }
         $request->validate([
             'dni' => 'required|integer|unique:usuarios',
             'nombre' => 'required|string|max:255',
@@ -157,7 +172,7 @@ class UsuarioController extends Controller
                 'domicilio' => $request->domicilio,
                 'email' => $request->email,
                 'fecha_nacimiento' => $request->fecha_nacimiento,
-                'contraseña' => bcrypt($request->contraseña),
+                'contraseña' => Hash::make($request->contraseña),
             ]);
 
             Vehiculo::create([
