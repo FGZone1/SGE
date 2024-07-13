@@ -20,10 +20,11 @@ use App\Http\Controllers\AbonoController;
 |
 */
 
-//Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-//    return $request->user();
-//}
-//);
+Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+    return $request->user();
+}
+);
+Route::middleware(['auth:sanctum', 'role:auto,admin'])->group(function () {
  // Usuarios
 Route::get('/usuarios', [UsuarioController::class, 'index']);
 Route::get('/usuarios/{dni}', [UsuarioController::class, 'show']);
@@ -57,8 +58,9 @@ Route::put('/cambiarpatente/{dni}', [UsuarioController::class, 'updatePatente'])
  Route::post('/recargas', [RecargaController::class, 'store']);
  Route::get('/recargas', [RecargaController::class, 'index']);
  Route::get('/recargas/{patente}', [RecargaController::class, 'getSaldoPorPatente']);
- 
+});
+Route::middleware(['auth:sanctum', 'role:negocio,admin'])->group(function () {
  // Abonos
  Route::get('/abonos', [AbonoController::class, 'index']);
  Route::post('/abonos', [AbonoController::class, 'store']);
-
+});

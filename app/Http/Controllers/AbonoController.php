@@ -12,7 +12,18 @@ class AbonoController extends Controller
   // Método para obtener los abonos
   public function index(Request $request)
   {
-      $consulta = AbonoComercio::query();
+    // el formato de fecha es yyyy-mm-dd en todo el programa
+     // Validar que el campo 'cuit_comercio' esté presente en la consulta
+     $validator = Validator::make($request->all(), [
+        'cuit_comercio' => 'required|integer',
+        'fecha_desde' => 'nullable|date',
+        'fecha_hasta' => 'nullable|date',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json(['message' => 'Faltan datos obligatorios o los mismos no son correctos'], 400);
+    }
+      $consulta = Recarga::query();
 
       if ($request->filled('cuit_comercio')) {
           $consulta->where('cuit_comercio', $request->cuit_comercio);
@@ -23,8 +34,12 @@ class AbonoController extends Controller
       }
 
       $abonos = $consulta->get();
+      //$importeTotal = $abonos->sum('importe');
 
-      return response()->json($abonos);
+     // return response()->json($abonos->sum('importe'));
+      return response()->json([
+        'importe_total' => $abonos->sum('importe'),
+        '_links' => ['href' => url('/api/comercios/' . $request->cuit_comercio)]]);
   }
 
   // Método para registrar un abono
@@ -51,11 +66,11 @@ class AbonoController extends Controller
       // Calcular el importe esperado
       $importeEsperado = $this->calcularImporteEsperado($request->cuit_comercio, $request->fecha_desde, $request->fecha_hasta);
       if ($request->importe != $importeEsperado) {
-          return response()->json(['message' => 'Importe incorrecto'], 400);
+          return response()->json(['message' => 'Importe incorrecto', "Es" => $importeEsperado], 400);
       }
 
       // Crear el abono
-      $abono = AbonoComercio::create([
+      $abono = Abono::create([
           'cuit_comercio' => $request->cuit_comercio,
           'fecha_desde' => $request->fecha_desde,
           'fecha_hasta' => $request->fecha_hasta,

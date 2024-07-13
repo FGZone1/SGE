@@ -30,6 +30,7 @@ class Usuario extends Model
         'fecha_nacimiento',
         'contraseña',
         'saldo',
+        'rol',
         ];
         protected $hidden = [
         'contraseña',
