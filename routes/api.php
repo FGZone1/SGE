@@ -29,17 +29,17 @@ use App\Http\Controllers\AuthController;
 
 
 
-Route::post('/login', [AuthController::class, 'login']);
-Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-});
-Route::middleware('auth:sanctum')->get('/check', function (Request $request) {
-    return response()->json(['user' => $request->user()]);
-});
-Route::middleware('auth:sanctum')->get('/logged-users', [AuthController::class, 'loggedUsers']);
+//Route::post('/login', [AuthController::class, 'login']);
+//Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
+//Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+//    return $request->user();
+//});
+//Route::middleware('auth:sanctum')->get('/check', function (Request $request) {
+//    return response()->json(['user' => $request->user()]);
+//});
+//Route::middleware('auth:sanctum')->get('/logged-users', [AuthController::class, 'loggedUsers']);
 
-Route::middleware(['auth:sanctum', 'chequearrol:auto,admin'])->group(function () {
+//Route::middleware(['auth:sanctum', 'chequearrol:auto,admin'])->group(function () {
  // Usuarios
 Route::get('/usuarios', [UsuarioController::class, 'index']);
 Route::post('/usuarios', [UsuarioController::class, 'store']);
@@ -73,9 +73,9 @@ Route::put('/cambiarpatente/{dni}', [UsuarioController::class, 'updatePatente'])
  Route::post('/recargas', [RecargaController::class, 'store']);
  Route::get('/recargas', [RecargaController::class, 'index']);
  Route::get('/recargas/{patente}', [RecargaController::class, 'getSaldoPorPatente']);
-});
-Route::middleware(['auth:sanctum', 'chequearrol:negocio,admin'])->group(function () {
+//});
+//Route::middleware(['auth:sanctum', 'chequearrol:negocio,admin'])->group(function () {
  // Abonos
  Route::get('/abonos', [AbonoController::class, 'index']);
  Route::post('/abonos', [AbonoController::class, 'store']);
-});
+//});
