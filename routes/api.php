@@ -1,5 +1,11 @@
 <?php
-
+/**
+ * @OA\Info(
+ *     title="API de Estacionamiento",
+ *     version="1.0.0",
+ *     description="Documentación de la API para el sistema de estacionamiento.",
+ * )
+ */
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UsuarioController;
@@ -24,16 +30,20 @@ use App\Http\Controllers\AuthController;
 
 
 Route::post('/login', [AuthController::class, 'login']);
-Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
+Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
+Route::middleware('auth:sanctum')->get('/check', function (Request $request) {
+    return response()->json(['user' => $request->user()]);
+});
+Route::middleware('auth:sanctum')->get('/logged-users', [AuthController::class, 'loggedUsers']);
 
 Route::middleware(['auth:sanctum', 'chequearrol:auto,admin'])->group(function () {
  // Usuarios
 Route::get('/usuarios', [UsuarioController::class, 'index']);
-Route::get('/usuarios/{dni}', [UsuarioController::class, 'show']);
 Route::post('/usuarios', [UsuarioController::class, 'store']);
+Route::get('/usuarios/{dni}', [UsuarioController::class, 'show']);
 Route::put('/usuarios/{dni}', [UsuarioController::class, 'update']);
 Route::delete('/usuarios/{dni}', [UsuarioController::class, 'destroy']);
 Route::put('/cambiarclave/{dni}', [UsuarioController::class, 'cambiarclave']);

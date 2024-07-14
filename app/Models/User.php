@@ -31,7 +31,7 @@ class User extends Authenticatable
         'rol',
         ];
         protected $hidden = [
-        //'contraseña',
+        'contraseña',
         'remember_token',
         'creado',
         'actualizado',];

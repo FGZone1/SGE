@@ -9,101 +9,185 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Validator;
 
+/**
+ * @OA\Info(
+ *     title="API de Estacionamiento",
+ *     version="1.0.0",
+ *     description="API para gestionar estacionamientos y vehículos",
+ *     )
+ */
+/**
+ * @OA\Tag(
+ *     name="Usuarios",
+ *     description="Operaciones relacionadas con usuarios"
+ * )
+ */
 class UsuarioController extends Controller
 {
+    /**
+     * @OA\Put(
+     *     path="/api/cambiarpatente/{dni}",
+     *     tags={"Usuarios"},
+     *     summary="Actualizar la patente de un vehículo",
+     *     @OA\Parameter(
+     *         name="dni",
+     *         in="path",
+     *         required=true,
+     *         description="DNI del usuario",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="patente_actual", type="string", description="Patente actual del vehículo"),
+     *             @OA\Property(property="patente_nueva", type="string", description="Nueva patente del vehículo")
+     *         )
+     *     ),
+     *     @OA\Response(response=200, description="Patente actualizada correctamente"),
+     *     @OA\Response(response=404, description="Usuario o vehículo no encontrado"),
+     *     @OA\Response(response=401, description="Contraseña incorrecta")
+     * )
+     */
     public function updatePatente(Request $request, $dni)
     {
         $usuario = Usuario::find($dni);
     
-        // Verifica si el usuario existe
         if (!$usuario) {
             return response()->json(['error' => 'Usuario no encontrado'], 404);
         }
     
-        // Valida la contraseña
         if (!Hash::check($request->input('contraseña'), $usuario->contraseña)) {
             return response()->json(['error' => 'Contraseña incorrecta'], 401);
         }
     
-        // Valida los datos de entrada
         $validatedData = $request->validate([
             'patente_actual' => 'required|string',
             'patente_nueva' => 'required|string|unique:vehiculos,patente',
         ]);
     
-        // Busca el vehículo por la patente actual
         $vehiculo = Vehiculo::where('patente', $validatedData['patente_actual'])
                             ->where('dni_usuario', $dni)
                             ->first();
     
-        // Verifica si el vehículo existe
         if (!$vehiculo) {
             return response()->json(['error' => 'Vehículo no encontrado para este usuario'], 404);
         }
     
-        // Actualiza la patente
         $vehiculo->patente = $validatedData['patente_nueva'];
         $vehiculo->save();
     
         return response()->json(['message' => 'Patente actualizada correctamente'], 200);
     }
 
+    /**
+     * @OA\Put(
+     *     path="/api/cambiarclave/{dni}",
+     *     tags={"Usuarios"},
+     *     summary="Cambiar la contraseña de un usuario",
+     *     @OA\Parameter(
+     *         name="dni",
+     *         in="path",
+     *         required=true,
+     *         description="DNI del usuario",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="contraseña_actual", type="string", description="Contraseña actual del usuario"),
+     *             @OA\Property(property="contraseña_nueva", type="string", description="Nueva contraseña del usuario")
+     *         )
+     *     ),
+     *     @OA\Response(response=200, description="Contraseña actualizada correctamente"),
+     *     @OA\Response(response=404, description="Usuario no encontrado"),
+     *     @OA\Response(response=401, description="Contraseña actual incorrecta")
+     * )
+     */
     public function cambiarclave(Request $request, $dni)
-{
-    $usuario = Usuario::find($dni);
+    {
+        $usuario = Usuario::find($dni);
 
-    // Verifica si el usuario existe
-    if (!$usuario) {
-        return response()->json(['error' => 'Usuario no encontrado'], 404);
-    }
-
-    // Valida la contraseña actual
-    if (!Hash::check($request->input('contraseña_actual'), $usuario->contraseña)) {
-        return response()->json(['error' => 'Contraseña actual incorrecta'], 401);
-    }
-
-    // Valida la nueva contraseña
-    $validatedData = $request->validate([
-        'contraseña_nueva' => 'required|string|min:8',
-    ]);
-
-    // Actualiza la contraseña
-    $usuario->contraseña = Hash::make($validatedData['contraseña_nueva']);
-    $usuario->save();
-
-    return response()->json(['message' => 'Contraseña actualizada correctamente'], 200);
-}
-
-    public function index()
-{
-    $usuarios = Usuario::all();
-
-    $response = $usuarios->map(function ($usuario) {
-        $patentes = Vehiculo::where('dni_usuario', $usuario->dni)->pluck('patente');
-
-        $links = [];
-        foreach ($patentes as $patente) {
-            $links[] = [
-                'rel' => 'estacionamiento',
-                'href' => url('/api/estacionamientos/' . $patente),
-            ];
+        if (!$usuario) {
+            return response()->json(['error' => 'Usuario no encontrado'], 404);
         }
 
-        return [
-            'dni' => $usuario->dni,
-            'nombre' => $usuario->nombre,
-            'apellido' => $usuario->apellido,
-            'domicilio' => $usuario->domicilio,
-            'email' => $usuario->email,
-            'fecha_nacimiento' => $usuario->fecha_nacimiento,
-            'patentes' => $patentes,
-            'saldo' => $usuario->saldo,
-            'links' => $links,
-        ];
-    });
+        if (!Hash::check($request->input('contraseña_actual'), $usuario->contraseña)) {
+            return response()->json(['error' => 'Contraseña actual incorrecta'], 401);
+        }
 
-    return response()->json($response, 200);
-}
+        $validatedData = $request->validate([
+            'contraseña_nueva' => 'required|string|min:8',
+        ]);
+
+        $usuario->contraseña = Hash::make($validatedData['contraseña_nueva']);
+        $usuario->save();
+
+        return response()->json(['message' => 'Contraseña actualizada correctamente'], 200);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/api/usuarios",
+     *     tags={"Usuarios"},
+     *     summary="Obtener lista de usuarios",
+     *     @OA\Response(
+     *         response=200,
+     *         description="Lista de usuarios",
+     *         @OA\JsonContent(type="array", @OA\Items(ref="#/components/schemas/Usuario"))
+     *     )
+     * )
+     */
+    public function index()
+    {
+        $usuarios = Usuario::all();
+
+        $response = $usuarios->map(function ($usuario) {
+            $patentes = Vehiculo::where('dni_usuario', $usuario->dni)->pluck('patente');
+
+            $links = [];
+            foreach ($patentes as $patente) {
+                $links[] = [
+                    'rel' => 'estacionamiento',
+                    'href' => url('/api/estacionamientos/' . $patente),
+                ];
+            }
+
+            return [
+                'dni' => $usuario->dni,
+                'nombre' => $usuario->nombre,
+                'apellido' => $usuario->apellido,
+                'domicilio' => $usuario->domicilio,
+                'email' => $usuario->email,
+                'fecha_nacimiento' => $usuario->fecha_nacimiento,
+                'patentes' => $patentes,
+                'saldo' => $usuario->saldo,
+                'links' => $links,
+            ];
+        });
+
+        return response()->json($response, 200);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/api/usuarios/{dni}",
+     *     tags={"Usuarios"},
+     *     summary="Obtener información de un usuario específico",
+     *     @OA\Parameter(
+     *         name="dni",
+     *         in="path",
+     *         required=true,
+     *         description="DNI del usuario",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Usuario encontrado",
+     *         @OA\JsonContent(ref="#/components/schemas/Usuario")
+     *     ),
+     *     @OA\Response(response=404, description="Usuario no encontrado")
+     * )
+     */
     public function show($dni)
     {
         $usuario = Usuario::find($dni);
@@ -113,7 +197,6 @@ class UsuarioController extends Controller
 
         $patentes = Vehiculo::where('dni_usuario', $dni)->pluck('patente');
 
-        // Construir los links HATEOAS para todas las patentes
         $links = [];
         foreach ($patentes as $patente) {
             $links[] = [
@@ -137,6 +220,28 @@ class UsuarioController extends Controller
         return response()->json($response, 200);
     }
 
+    /**
+     * @OA\Post(
+     *     path="/api/usuarios",
+     *     tags={"Usuarios"},
+     *     summary="Crear un nuevo usuario",
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="dni", type="integer", description="DNI del usuario"),
+     *             @OA\Property(property="nombre", type="string", description="Nombre del usuario"),
+     *             @OA\Property(property="apellido", type="string", description="Apellido del usuario"),
+     *             @OA\Property(property="domicilio", type="string", description="Domicilio del usuario"),
+     *             @OA\Property(property="email", type="string", description="Email del usuario"),
+     *             @OA\Property(property="fecha_nacimiento", type="string", format="date", description="Fecha de nacimiento"),
+     *             @OA\Property(property="patente", type="string", description="Patente del vehículo"),
+     *             @OA\Property(property="contraseña", type="string", description="Contraseña del usuario")
+     *         )
+     *     ),
+     *     @OA\Response(response=201, description="Usuario y vehículo creados correctamente"),
+     *     @OA\Response(response=404, description="Datos no válidos")
+     * )
+     */
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -153,16 +258,6 @@ class UsuarioController extends Controller
         if ($validator->fails()) {
             return response()->json(['message' => 'Faltan datos obligatorios o los mismos no son correctos'], 404);
         }
-        $request->validate([
-            'dni' => 'required|integer|unique:usuarios',
-            'nombre' => 'required|string|max:255',
-            'apellido' => 'required|string|max:255',
-            'domicilio' => 'string|max:255|nullable',
-            'email' => 'required|email|unique:usuarios',
-            'fecha_nacimiento' => 'required|date',
-            'patente' => 'required|string|max:20|unique:vehiculos',
-            'contraseña' => 'required|string|min:8',
-        ]);
 
         DB::transaction(function () use ($request) {
             $usuario = Usuario::create([
@@ -183,21 +278,46 @@ class UsuarioController extends Controller
 
         return response()->json('Usuario y vehículo creados correctamente', 201);
     }
+
+    /**
+     * @OA\Put(
+     *     path="/api/usuarios/{dni}",
+     *     tags={"Usuarios"},
+     *     summary="Actualizar un usuario existente",
+     *     @OA\Parameter(
+     *         name="dni",
+     *         in="path",
+     *         required=true,
+     *         description="DNI del usuario",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="nombre", type="string", description="Nombre del usuario"),
+     *             @OA\Property(property="apellido", type="string", description="Apellido del usuario"),
+     *             @OA\Property(property="domicilio", type="string", description="Domicilio del usuario"),
+     *             @OA\Property(property="email", type="string", description="Email del usuario"),
+     *             @OA\Property(property="fecha_nacimiento", type="string", format="date", description="Fecha de nacimiento")
+     *         )
+     *     ),
+     *     @OA\Response(response=200, description="Usuario actualizado correctamente"),
+     *     @OA\Response(response=404, description="Usuario no encontrado"),
+     *     @OA\Response(response=401, description="Contraseña incorrecta")
+     * )
+     */
     public function update(Request $request, $dni)
     {
         $usuario = Usuario::find($dni);
 
-        // Verifica si el usuario existe
         if (!$usuario) {
             return response()->json(['error' => 'Usuario no encontrado'], 404);
         }
 
-        // Valida la contraseña
         if (!Hash::check($request->input('contraseña'), $usuario->contraseña)) {
             return response()->json(['error' => 'Contraseña incorrecta'], 401);
         }
 
-        // Valida los datos de entrada
         $validatedData = $request->validate([
             'nombre' => 'sometimes|required|string|max:100',
             'apellido' => 'sometimes|required|string|max:100',
@@ -206,29 +326,38 @@ class UsuarioController extends Controller
             'fecha_nacimiento' => 'sometimes|required|date',
         ]);
 
-        // Actualiza el usuario
         $usuario->update($validatedData);
 
         return response()->json(['message' => 'Usuario actualizado correctamente'], 200);
     }
-   
+
+    /**
+     * @OA\Delete(
+     *     path="/api/usuarios/{dni}",
+     *     tags={"Usuarios"},
+     *     summary="Eliminar un usuario",
+     *     @OA\Parameter(
+     *         name="dni",
+     *         in="path",
+     *         required=true,
+     *         description="DNI del usuario",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(response=200, description="Usuario y vehículos eliminados con éxito"),
+     *     @OA\Response(response=404, description="Usuario no encontrado")
+     * )
+     */
     public function destroy($dni)
     {
-        // Buscar el usuario por DNI
         $usuario = Usuario::find($dni);
 
-        // Si no se encuentra, devolver un error 404
         if (!$usuario) {
             return response()->json(['error' => 'Usuario no encontrado'], 404);
         }
 
-        // Eliminar los vehículos asociados al usuario
         Vehiculo::where('dni_usuario', $dni)->delete();
-
-        // Eliminar el usuario
         $usuario->delete();
 
-        // Retornar una respuesta exitosa
         return response()->json(['message' => 'Usuario y vehículos eliminados con éxito'], 200);
     }
 }
